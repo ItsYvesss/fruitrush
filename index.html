@@ -94,7 +94,7 @@ else if(id=='clash'){if(clash>0&&fr.length){clash--;sh=14;fr.forEach(f=>{f.vy-=4
 else if(id=='bgm'){S.bgm=S.bgm?0:1;save();if(ac)nextT=ac.currentTime+.1;if(S.bgm)showTrack()}else if(id=='skip'){if(!S.bgm){S.bgm=1;save()}skipTrack()}else if(id=='snd'){S.snd=S.snd?0:1;save()}}
 /* ---------- PHYSICS ---------- */
 function step(dt){
-for(const f of fr){f.px=f.x;f.py=f.y;f.pa=f.a;f.age+=dt;f.vy+=1500*dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=.999;f.a+=f.w*dt;f.w*=.985;f.sq*=.9;f.sv+=(1-f.s)*900*dt;f.sv*=.94;f.s+=f.sv*dt}
+for(const f of fr){f.px=f.x;f.py=f.y;f.pa=f.a;f.age+=dt;f.vy+=1500*dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=.999;f.a+=f.w*dt*.35;f.w*=.94;f.sq*=.9;f.sv+=(1-f.s)*900*dt;f.sv*=.94;f.s+=f.sv*dt}
 const mg=[];
 for(let it=0;it<4;it++){
 for(let i=0;i<fr.length;i++){const a=fr[i];if(a.dead)continue;
@@ -106,13 +106,13 @@ const nx=dx/d,ny=dy/d,o=m-d,ma=R[a.l]**2,mb=R[b.l]**2,t=ma+mb;
 a.x-=nx*o*mb/t;a.y-=ny*o*mb/t;b.x+=nx*o*ma/t;b.y+=ny*o*ma/t;
 const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
 if(rv<0){const J=-1.1*rv/(1/ma+1/mb);a.vx-=J/ma*nx;a.vy-=J/ma*ny;b.vx+=J/mb*nx;b.vy+=J/mb*ny;
-const tv=(b.vx-a.vx)*-ny+(b.vy-a.vy)*nx;a.vx+=-ny*tv*.03;a.vy+=nx*tv*.03;b.vx-=-ny*tv*.03;b.vy-=nx*tv*.03;a.w+=tv*.004;b.w+=tv*.004;
+const tv=(b.vx-a.vx)*-ny+(b.vy-a.vy)*nx;a.vx+=-ny*tv*.03;a.vy+=nx*tv*.03;b.vx-=-ny*tv*.03;b.vy-=nx*tv*.03;a.w+=tv*.001;b.w+=tv*.001;
 if(-rv>180&&performance.now()-lastHit>45){lastHit=performance.now();sHit(-rv);a.sq=b.sq=Math.min(.18,-rv/2500)}}}}}
 for(const f of fr){if(f.dead)continue;const r=R[f.l];
 for(const[x1,y1,x2,y2]of WL){const ex=x2-x1,ey=y2-y1;let t=cl(((f.x-x1)*ex+(f.y-y1)*ey)/(ex*ex+ey*ey),0,1);
 const px=x1+ex*t,py=y1+ey*t,dx=f.x-px,dy=f.y-py,d=Math.hypot(dx,dy);
 if(d<r&&d>1e-3){const nx=dx/d,ny=dy/d;f.x+=nx*(r-d);f.y+=ny*(r-d);const vn=f.vx*nx+f.vy*ny;
-if(vn<0){f.vx-=1.15*vn*nx;f.vy-=1.15*vn*ny;f.vx*=.985;f.w+=f.vx*.0005;if(-vn>260&&performance.now()-lastHit>45){lastHit=performance.now();sHit(-vn);f.sq=Math.min(.15,-vn/3000)}}}}}}
+if(vn<0){f.vx-=1.15*vn*nx;f.vy-=1.15*vn*ny;f.vx*=.985;f.w+=f.vx*.00012;if(-vn>260&&performance.now()-lastHit>45){lastHit=performance.now();sHit(-vn);f.sq=Math.min(.15,-vn/3000)}}}}}}
 for(const[a,b]of mg){const l=a.l+1,x=(a.x+b.x)/2,y=(a.y+b.y)/2,n=mk(l,x,y);n.vx=(a.vx+b.vx)/2;n.vy=(a.vy+b.vy)/2;n.s=.6;fr.push(n);
 combo=comboT>0?combo+1:1;comboT=1.5;const gain=Math.round(PTS[l]*(1+Math.min(combo-1,8)*.25));score+=gain;if(score>S.best){S.best=score;save()}
 fl.push({x,y,t:1,txt:'+'+gain});if(combo>1)fl.push({x,y:y-34,t:1,txt:'COMBO x'+combo});rg.push({x,y,r:R[l],t:1,col:COL[l]});burst(x,y,COL[l],12+l*2);sMerge(l,combo);if(l==10)sh=12}
