@@ -92,7 +92,7 @@ const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
 function burst(x,y,col,n){for(let i=0;i<n;i++){const a=Math.random()*6.28,v=80+Math.random()*220;pt.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-60,l:.7,col})}}
 function drop(){if(cool>0||state!='play')return;const x=cl(aimV,285+R[cur],675-R[cur]);const f=mk(cur,x,110);f.vy=150;fr.push(f);cur=nxt;nxt=rnd();cool=.55;sDrop();saveProgress()}
 function act(id){sClick();
-if(id=='menu')setState('menu');else if(id=='back')setState('play');else if(id=='retry')reset();
+if(id=='menu')setState('menu');else if(id=='back')setState('play');else if(id=='retry'){try{localStorage.removeItem(PROGRESS_KEY)}catch(e){}reset();}
 else if(id=='change'){[cur,nxt]=[nxt,cur]}
 else if(id=='clash'){if(clash>0&&fr.length){clash--;sh=14;fr.forEach(f=>{f.vy-=450+Math.random()*350;f.vx+=(Math.random()-.5)*500;f.sq=.15});sClash()}}
 else if(id=='bgm'){S.bgm=S.bgm?0:1;save();if(ac)nextT=ac.currentTime+.1;if(S.bgm)showTrack()}else if(id=='skip'){if(!S.bgm){S.bgm=1;save()}skipTrack()}else if(id=='snd'){S.snd=S.snd?0:1;save()}}
