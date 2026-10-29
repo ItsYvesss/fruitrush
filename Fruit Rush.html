@@ -45,7 +45,7 @@ const showTrack=()=>{toast={t:2.8,s:TR[trk].n}};
 function skipTrack(){trk=(trk+1)%TR.length;stp=0;if(ac)nextT=ac.currentTime+.08;showTrack()}
 function gl(f,t,v,bus){const s=ac.currentTime+t;[[f,1,.5],[f*2.76,.35,.15]].forEach(([q,m,d])=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=q;g.gain.setValueAtTime(.0001,s);g.gain.linearRampToValueAtTime(v*m,s+.004);g.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(g);g.connect(bus);o.start(s);o.stop(s+d+.05)})}
 function sched(){if(!ac)return;if(!S.bgm){nextT=Math.max(nextT,ac.currentTime);return}
-while(nextT<ac.currentTime+.3){const T=TR[trk],M=T.m.replace(/\\|/g,''),ch=T.c.split(' ')[(stp%64)>>3],s=stp%64,b=s%8,q=Math.max(0,nextT-ac.currentTime),sw=b%2?T.sw:0,m=M[s],k=T.k,r0=+ch.slice(0,-1),r=r0>=5?r0-12:r,tp=TRI[ch.slice(-1)];
+while(nextT<ac.currentTime+.3){const T=TR[trk],M=T.m.replace(/\|/g,''),ch=T.c.split(' ')[(stp%64)>>3],s=stp%64,b=s%8,q=Math.max(0,nextT-ac.currentTime),sw=b%2?T.sw:0,m=M[s],k=T.k,r0=+ch.slice(0,-1),r=r0>=5?r0-12:r,tp=TRI[ch.slice(-1)];
 if(m!='.')pluck(k*2**(PE[+m]/12),q+sw,.17,bgmG,.4);
 if(b%2)gl(k*4*2**((r+tp[(b>>1)%3])/12),q+sw,.03,bgmG);
 if(b==2||b==6)tp.forEach((n,i)=>pluck(k*2**((r+n)/12),q+i*.012,.06,bgmG,.22));
