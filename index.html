@@ -23,8 +23,8 @@ body{user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:trans
     <div id="music-panel">
       <p>Choose an MP3 from your device, then press Play. The file is not uploaded to a server and is not saved; refreshing the page clears it.</p>
       <input id="mp3-file" type="file" accept=".mp3,audio/mpeg">
-      <div class="admin-row"><button class="admin-btn" type="button" id="mp3-choose">Choose MP3</button><button class="admin-btn" type="button" id="mp3-play" disabled>Play song</button><button class="admin-btn secondary" type="button" id="mp3-stop" disabled>Stop</button></div>
-      <div id="mp3-name">No file selected</div><audio id="mp3-player" controls></audio>
+      <div class="admin-row"><button class="admin-btn" type="button" id="mp3-choose">Choose MP3</button><button class="admin-btn" type="button" id="mp3-play" disabled>Play song</button><button class="admin-btn secondary" type="button" id="mp3-stop" disabled>Stop</button><button class="admin-btn secondary" type="button" id="mp3-skip" disabled>Skip song ⏭</button></div>
+      <div id="mp3-name">No file selected</div><div id="mp3-now-playing" style="font-size:13px;color:#ffe38a;margin:6px 0">Nothing playing</div><audio id="mp3-player" controls></audio>
     </div>
     <div id="admin-status" role="status"></div>
   </section>
@@ -65,7 +65,7 @@ const PE=[0,2,4,7,9,12,14,16,19,21],TRI={M:[0,4,7],m:[0,3,7]},TR=[
 {n:'Berry Bounce',bpm:122,k:174.61,sw:.05,c:'0M 9m 5M 7M 0M 9m 5M 7M',m:'2.4.5.4.|3.1.3.4.|5.7.8.7.|5.4.2.4.|2.4.5.7.|8.7.5.4.|3.4.5.3.|1.2.3...'}];
 let trk=0,toast={t:0,s:''};
 const showTrack=()=>{toast={t:2.8,s:TR[trk].n}};
-function skipTrack(){trk=(trk+1)%TR.length;stp=0;if(ac)nextT=ac.currentTime+.08;showTrack()}
+function skipTrack(){if(typeof skipCustomMusic==='function'&&customMusicPlaying){skipCustomMusic();return}trk=(trk+1)%TR.length;stp=0;if(ac)nextT=ac.currentTime+.08;showTrack()}
 function gl(f,t,v,bus){const s=ac.currentTime+t;[[f,1,.5],[f*2.76,.35,.15]].forEach(([q,m,d])=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=q;g.gain.setValueAtTime(.0001,s);g.gain.linearRampToValueAtTime(v*m,s+.004);g.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(g);g.connect(bus);o.start(s);o.stop(s+d+.05)})}
 let customMusicPlaying=false;
 function sched(){if(!ac||customMusicPlaying)return;if(!S.bgm){nextT=Math.max(nextT,ac.currentTime);return}
@@ -188,7 +188,7 @@ T('CHANGE!',108,b0+98,20,'#fff','#2b2150');
 B('clash',384,b0,96,78,()=>{P(384,b0,96,78,'#a9d4a0',12);c.fillStyle='rgba(255,255,255,.8)';c.beginPath();c.arc(432,b0+39,24,0,7);c.fill();dF(3,418,b0+39,12);dF(4,447,b0+36,15)});
 T('CLASH! '+clash+'/50',432,b0+98,20,clash?'#fff':'#bbb','#2b2150');
 P(20,H-76,500,56,'#f1c6a8',28);for(let i=0;i<11;i++)dF(i,48+i*44.4,H-48,6+i*.7)}
-if(toast.t>0&&S.bgm){c.globalAlpha=Math.min(1,toast.t*2);P(W/2-140,PT?118:26,280,44,'#ffe96b',22);T('♪ '+toast.s,W/2,PT?141:49,22,'#2b2150','#fff');c.globalAlpha=1}
+if(toast.t>0&&(S.bgm||customMusicPlaying)){c.globalAlpha=Math.min(1,toast.t*2);P(W/2-140,PT?118:26,280,44,'#ffe96b',22);T('♪ '+toast.s,W/2,PT?141:49,22,'#2b2150','#fff');c.globalAlpha=1}
 if(state=='menu'){popup();P(290,30,380,580,'#a97b61',14);T('SETTINGS',480,78,46,'#fff','#2b2150','center',6);
 T('BEST SCORE',325,140,26,'#fff','#2b2150','left',4);T(String(S.best),640,140,36,'#ffe96b','#2b2150','right');
 T('MUSIC',325,208,28,'#fff','#2b2150','left',6);B('bgm',555,187,84,42,()=>toggle(555,187,S.bgm));
@@ -225,18 +225,27 @@ else if((k=='Enter'||k=='r')&&state=='over')act('retry');aim=cl(aim,0,W)});
  const shell=document.getElementById('admin-console'),form=document.getElementById('admin-form'),input=document.getElementById('admin-command');
  const panel=document.getElementById('music-panel'),status=document.getElementById('admin-status'),file=document.getElementById('mp3-file');
  const choose=document.getElementById('mp3-choose'),play=document.getElementById('mp3-play'),stop=document.getElementById('mp3-stop');
- const player=document.getElementById('mp3-player'),name=document.getElementById('mp3-name');
- let objectUrl=null;
+ const player=document.getElementById('mp3-player'),name=document.getElementById('mp3-name'),nowPlaying=document.getElementById('mp3-now-playing'),skip=document.getElementById('mp3-skip');
+ let objectUrl=null;let savedTrackName='';
+ const DB_NAME='fruitrush_music_db',DB_STORE='tracks';
+ function openMusicDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(DB_STORE))req.result.createObjectStore(DB_STORE)};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
+ async function saveTrack(fileBlob,fileName){const db=await openMusicDB();return new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readwrite');tx.objectStore(DB_STORE).put({blob:fileBlob,name:fileName},'savedTrack');tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>{db.close();reject(tx.error)}})}
+ async function getSavedTrack(){const db=await openMusicDB();return new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readonly'),req=tx.objectStore(DB_STORE).get('savedTrack');req.onsuccess=()=>{db.close();resolve(req.result||null)};req.onerror=()=>{db.close();reject(req.error)}})}
+ async function deleteSavedTrack(){try{const db=await openMusicDB();await new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readwrite');tx.objectStore(DB_STORE).delete('savedTrack');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close()}catch(e){}}
+ function setNowPlaying(label,active){nowPlaying.textContent=active?'Now playing: '+label:'Nothing playing';toast={t:active?4:0,s:label||''};}
  function openConsole(){shell.classList.add('open');shell.setAttribute('aria-hidden','false');input.value='';status.textContent='';setTimeout(()=>input.focus(),0)}
  function closeConsole(){shell.classList.remove('open');shell.setAttribute('aria-hidden','true');if(cv)cv.focus?.()}
- function stopCustomMusic(){player.pause();player.currentTime=0;customMusicPlaying=false;nextT=ac?ac.currentTime+.08:0;play.textContent='Play song'}
- function clearCustomFile(){stopCustomMusic();player.removeAttribute('src');player.load();player.style.display='none';play.disabled=true;stop.disabled=true;file.value='';name.textContent='No file selected';if(objectUrl){URL.revokeObjectURL(objectUrl);objectUrl=null}}
- form.addEventListener('submit',e=>{e.preventDefault();const command=input.value.trim().toLowerCase();if(command==='music'){panel.classList.add('visible');status.textContent='Music uploader opened. Choose an MP3 file.'}else if(command==='refresh'){clearCustomFile();status.textContent='Temporary music cleared. Refresh the page to reload the game.'}else status.textContent='Unknown command. Try: music';});
+ function stopCustomMusic(){player.pause();player.currentTime=0;customMusicPlaying=false;nextT=ac?ac.currentTime+.08:0;play.textContent='Play song';if(savedTrackName)setNowPlaying(savedTrackName,false)}
+ function skipCustomMusic(){stopCustomMusic();status.textContent='Skipped. Procedural game music will continue.';setNowPlaying('',false);}
+ function clearCustomFile(){stopCustomMusic();player.removeAttribute('src');player.load();player.style.display='none';play.disabled=true;stop.disabled=true;skip.disabled=true;file.value='';name.textContent='No file selected';savedTrackName='';setNowPlaying('',false);if(objectUrl){URL.revokeObjectURL(objectUrl);objectUrl=null}}
+ form.addEventListener('submit',e=>{e.preventDefault();const command=input.value.trim().toLowerCase();if(command==='music'){panel.classList.add('visible');status.textContent='Music uploader opened. Choose an MP3 file.'}else if(command==='refresh'){clearCustomFile();deleteSavedTrack();status.textContent='Saved custom music removed. Refresh the page to reload the game.'}else status.textContent='Unknown command. Try: music';});
  choose.addEventListener('click',()=>file.click());
- file.addEventListener('change',()=>{const picked=file.files&&file.files[0];if(!picked)return;if(!(picked.type==='audio/mpeg'||picked.name.toLowerCase().endsWith('.mp3'))){status.textContent='Please choose an MP3 file.';file.value='';return}clearCustomFile();objectUrl=URL.createObjectURL(picked);player.src=objectUrl;player.style.display='block';name.textContent=picked.name;play.disabled=false;stop.disabled=false;status.textContent='MP3 ready. Press Play song.'});
- play.addEventListener('click',async()=>{if(!player.src)return;try{if(ac&&ac.state==='suspended')await ac.resume();await player.play();customMusicPlaying=true;play.textContent='Playing';status.textContent='Playing your temporary MP3.'}catch(e){status.textContent='Could not play this file. Try another MP3 or press Play again.'}});
+ file.addEventListener('change',()=>{const picked=file.files&&file.files[0];if(!picked)return;if(!(picked.type==='audio/mpeg'||picked.name.toLowerCase().endsWith('.mp3'))){status.textContent='Please choose an MP3 file.';file.value='';return}clearCustomFile();objectUrl=URL.createObjectURL(picked);player.src=objectUrl;player.style.display='block';name.textContent=picked.name;savedTrackName=picked.name;play.disabled=false;stop.disabled=false;skip.disabled=false;setNowPlaying(picked.name,false);status.textContent='Saving MP3 in this browser…';try{await saveTrack(picked,picked.name);status.textContent='MP3 saved in this browser. It will still be here after refresh.'}catch(e){status.textContent='Loaded for this session, but browser storage was blocked or full.'}});
+ play.addEventListener('click',async()=>{if(!player.src)return;try{if(ac&&ac.state==='suspended')await ac.resume();await player.play();customMusicPlaying=true;play.textContent='Playing';setNowPlaying(savedTrackName||name.textContent,true);status.textContent='Playing: '+(savedTrackName||name.textContent);}catch(e){status.textContent='Could not play this file. Try another MP3 or press Play again.'}});
  stop.addEventListener('click',()=>{stopCustomMusic();status.textContent='MP3 stopped.'});
- player.addEventListener('ended',()=>{customMusicPlaying=false;nextT=ac?ac.currentTime+.08:0;play.textContent='Play song';status.textContent='Song finished.'});
+ skip.addEventListener('click',skipCustomMusic);
+ player.addEventListener('ended',()=>{customMusicPlaying=false;nextT=ac?ac.currentTime+.08:0;play.textContent='Play song';status.textContent='Song finished.';setNowPlaying('',false)});
+ (async()=>{try{const saved=await getSavedTrack();if(saved&&saved.blob){objectUrl=URL.createObjectURL(saved.blob);player.src=objectUrl;player.style.display='block';name.textContent=saved.name;savedTrackName=saved.name;play.disabled=false;stop.disabled=false;skip.disabled=false;setNowPlaying(saved.name,false);status.textContent='Restored saved MP3. Press Play song to start.'}}catch(e){status.textContent='Could not restore saved music from browser storage.'}})();
  player.addEventListener('pause',()=>{if(!player.ended&&customMusicPlaying){customMusicPlaying=false;nextT=ac?ac.currentTime+.08:0;play.textContent='Play song'}});
  document.getElementById('admin-close').addEventListener('click',closeConsole);
  shell.addEventListener('pointerdown',e=>{if(e.target===shell)closeConsole()});
