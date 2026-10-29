@@ -37,38 +37,23 @@ if(l==10)[0,4,7,12,16,19,24].forEach((n,i)=>sp(523*2**(n/12),i*.08,.2,.6))}
 const sOver=()=>{[392,349,311,262].forEach((f,i)=>sp(f,i*.25,.22,.5));sf(130,.9,'sine',.2,.9,60)};
 const sClash=()=>{if(S.snd)nz(0,.5,.28,400,sfxG,'bandpass');sf(120,.45,'sawtooth',.12,0,420);sp(660,.1,.12,.3)};
 const PE=[0,2,4,7,9,12,14,16,19,21],TRI={M:[0,4,7],m:[0,3,7]},TR=[
-{n:'Fruit Fiesta!',bpm:158,k:261.63,sw:.012,c:'0M 5M 7M 0M 4M 5M 9m 7M',m:'0.4.7.9.7.4.2.4.|7.9.12.9.7.4.2.0.|4.7.9.12.9.7.4.2.|5.7.9.7.5.4.2.4.|0.4.7.12.9.7.4.2.|7.9.12.14.12.9.7.4.|4.7.9.12.14.12.9.7.|5.9.12.16.12.9.7.5.'},
-{n:'Watermelon Whirl!',bpm:172,k:220,sw:.008,c:'0M 0M 5M 7M 0M 4M 5M 7M',m:'0.3.7.10.7.3.0.3.|5.7.10.12.10.7.5.3.|7.10.12.15.12.10.7.5.|4.7.11.12.11.7.4.2.|0.3.7.10.12.10.7.3.|5.7.10.14.12.10.7.5.|7.10.12.15.17.15.12.10.|4.7.11.12.14.12.7.4.'},
-{n:'Berry Bonkers!',bpm:164,k:293.66,sw:.018,c:'0M 7M 5M 9m 0M 7M 4M 5M',m:'0.4.7.11.9.7.4.2.|7.11.14.16.14.11.7.4.|5.9.12.16.12.9.5.2.|9.12.14.17.14.12.9.7.|0.4.7.12.14.12.7.4.|7.11.14.19.16.14.11.7.|4.7.11.14.16.14.11.7.|5.9.12.16.19.16.12.9.'}];
+{n:'Sunny Orchard',bpm:132,k:261.63,sw:.02,c:'0M 7M 9m 5M 0M 7M 5M 7M',m:'5.35.4.3|1.34.3.1|2.45.4.2|3.54.3.1|5.35.4.3|6.65.3.1|2.45.7.5|6.8.7.5.'},
+{n:'Juicy Jam',bpm:146,k:196,sw:.03,c:'0M 5M 0M 7M 0M 5M 9m 7M',m:'3.35.35.|8.7.5.3.|4.45.45.|7.5.4.3.|3.35.35.|5.67.85.|7.5.7.8.|6.5.3.1.'},
+{n:'Berry Bounce',bpm:122,k:174.61,sw:.05,c:'0M 9m 5M 7M 0M 9m 5M 7M',m:'2.4.5.4.|3.1.3.4.|5.7.8.7.|5.4.2.4.|2.4.5.7.|8.7.5.4.|3.4.5.3.|1.2.3...'}];
 let trk=0,toast={t:0,s:''};
 const showTrack=()=>{toast={t:2.8,s:TR[trk].n}};
 function skipTrack(){trk=(trk+1)%TR.length;stp=0;if(ac)nextT=ac.currentTime+.08;showTrack()}
 function gl(f,t,v,bus){const s=ac.currentTime+t;[[f,1,.5],[f*2.76,.35,.15]].forEach(([q,m,d])=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=q;g.gain.setValueAtTime(.0001,s);g.gain.linearRampToValueAtTime(v*m,s+.004);g.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(g);g.connect(bus);o.start(s);o.stop(s+d+.05)})}
 function sched(){if(!ac)return;if(!S.bgm){nextT=Math.max(nextT,ac.currentTime);return}
-while(nextT<ac.currentTime+.32){
-const T=TR[trk],M=T.m.replace(/\\|/g,''),ch=T.c.split(' ')[(stp%64)>>3],s=stp%64,b=s%8,q=Math.max(0,nextT-ac.currentTime),sw=b%2?T.sw:0,m=M[s],k=T.k,r0=+ch.slice(0,-1),r=r0>=5?r0-12:r0,tp=TRI[ch.slice(-1)];
-// Original fruit-pop lead, bouncy bass, bright chord stabs and playful percussion.
-if(m&&m!=='.')pluck(k*2**(PE[+m]/12),q+sw,.19,bgmG,.32);
-if(b%2===0)gl(k*2**((r+12)/12),q+sw,.035,bgmG);
-if(b===0||b===4){
-tn(k*2**((r-12)/12),.18,'triangle',.22,q,0,bgmG);
-tn(72,.13,'sine',.34,q,35,bgmG);
-}
-if(b===2||b===6){
-tp.forEach((n,i)=>pluck(k*2**((r+n+12)/12),q+i*.009,.075,bgmG,.19));
-tn(180,.075,'triangle',.09,q,90,bgmG);
-}
-if(b===1||b===3||b===5||b===7){
-nz(q,.055,b===3||b===7?.075:.045,4200,bgmG,'highpass');
-if(b===3||b===7)nz(q+.025,.07,.07,950,bgmG,'bandpass');
-}
-// Little rising candy-synth sparkles every two bars.
-if(s%16===14){const sparkle=[12,16,19,24][Math.floor(stp/2)%4];pluck(k*2**(sparkle/12),q+.025,.11,bgmG,.28)}
-// A tiny fill at the end of each phrase keeps the loop feeling alive.
-if(s%32===31){tn(k*2,.12,'sine',.12,q,0,bgmG);nz(q,.09,.06,6200,bgmG,'highpass')}
-nextT+=30/T.bpm;stp++;
-if(stp>=64){trk=(trk+1)%TR.length;stp=0;showTrack()}
-}}
+while(nextT<ac.currentTime+.3){const T=TR[trk],M=T.m.replace(/\\|/g,''),ch=T.c.split(' ')[(stp%64)>>3],s=stp%64,b=s%8,q=Math.max(0,nextT-ac.currentTime),sw=b%2?T.sw:0,m=M[s],k=T.k,r0=+ch.slice(0,-1),r=r0>=5?r0-12:r,tp=TRI[ch.slice(-1)];
+if(m!='.')pluck(k*2**(PE[+m]/12),q+sw,.17,bgmG,.4);
+if(b%2)gl(k*4*2**((r+tp[(b>>1)%3])/12),q+sw,.03,bgmG);
+if(b==2||b==6)tp.forEach((n,i)=>pluck(k*2**((r+n)/12),q+i*.012,.06,bgmG,.22));
+const bn={0:0,3:12,4:7,6:0,7:12}[b];if(bn!=null)tn(k*2**((r-12+bn)/12),.2,'triangle',.3,q,0,bgmG);
+if(b==0||b==4)tn(130,.14,'sine',.38,q,42,bgmG);
+if(b==2||b==6){nz(q,.09,.1,1600,bgmG,'bandpass');nz(q+.012,.06,.05,3000,bgmG,'bandpass')}
+nz(q+sw,.03,b%2?.03:.05,7500,bgmG);
+nextT+=30/T.bpm;stp++;if(stp>=128){trk=(trk+1)%TR.length;stp=0;showTrack()}}}
 setInterval(sched,80);
 /* ---------- FRUIT ART ---------- */
 function F(k,l,r){const lw=Math.max(1.8,r*.09);k.lineWidth=lw;k.strokeStyle='#3b2318';k.lineJoin=k.lineCap='round';
