@@ -188,7 +188,7 @@ T('CHANGE!',108,b0+98,20,'#fff','#2b2150');
 B('clash',384,b0,96,78,()=>{P(384,b0,96,78,'#a9d4a0',12);c.fillStyle='rgba(255,255,255,.8)';c.beginPath();c.arc(432,b0+39,24,0,7);c.fill();dF(3,418,b0+39,12);dF(4,447,b0+36,15)});
 T('CLASH! '+clash+'/50',432,b0+98,20,clash?'#fff':'#bbb','#2b2150');
 P(20,H-76,500,56,'#f1c6a8',28);for(let i=0;i<11;i++)dF(i,48+i*44.4,H-48,6+i*.7)}
-if(toast.t>0&&(S.bgm||customMusicPlaying)){c.globalAlpha=Math.min(1,toast.t*2);P(W/2-140,PT?118:26,280,44,'#ffe96b',22);T('♪ '+toast.s,W/2,PT?141:49,22,'#2b2150','#fff');c.globalAlpha=1}
+if((toast.t>0&&S.bgm)||customMusicPlaying){c.globalAlpha=customMusicPlaying?1:Math.min(1,toast.t*2);P(W/2-140,PT?118:26,280,44,'#ffe96b',22);T('♪ '+(customMusicPlaying?(savedTrackName||toast.s):toast.s),W/2,PT?141:49,22,'#2b2150','#fff');c.globalAlpha=1}
 if(state=='menu'){popup();P(290,30,380,580,'#a97b61',14);T('SETTINGS',480,78,46,'#fff','#2b2150','center',6);
 T('BEST SCORE',325,140,26,'#fff','#2b2150','left',4);T(String(S.best),640,140,36,'#ffe96b','#2b2150','right');
 T('MUSIC',325,208,28,'#fff','#2b2150','left',6);B('bgm',555,187,84,42,()=>toggle(555,187,S.bgm));
