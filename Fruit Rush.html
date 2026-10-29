@@ -5,7 +5,30 @@
 :root[data-theme="dark"]{--bg:#5a2540}
 html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;touch-action:none;overscroll-behavior:none}
 body{display:flex;align-items:center;justify-content:center}
-body{user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}canvas{display:block;border-radius:14px;box-shadow:0 6px 24px #0005;touch-action:none;cursor:pointer}</style></head><body><canvas id="c"></canvas>
+body{user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}canvas{display:block;border-radius:14px;box-shadow:0 6px 24px #0005;touch-action:none;cursor:pointer}
+#admin-console{position:fixed;z-index:20;inset:0;background:#1a1424d9;display:none;align-items:center;justify-content:center;padding:18px;font-family:Arial,sans-serif;user-select:text;-webkit-user-select:text}
+#admin-console.open{display:flex}#admin-card{width:min(440px,94vw);background:#211b31;color:#fff;border:1px solid #75658c;border-radius:16px;padding:20px;box-shadow:0 18px 60px #0008}
+#admin-card h2{margin:0 0 8px;font-size:22px}#admin-card p{font-size:13px;color:#d6cce5;line-height:1.45}
+#admin-command{box-sizing:border-box;width:100%;padding:12px;border-radius:8px;border:1px solid #81729a;background:#100d18;color:#fff;font-size:16px;outline:none}
+.admin-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.admin-btn{border:0;border-radius:9px;padding:10px 14px;background:#ffcf5b;color:#251b30;font-weight:700;cursor:pointer}.admin-btn.secondary{background:#514563;color:#fff}
+#music-panel{display:none;margin-top:14px;padding-top:12px;border-top:1px solid #514563}#music-panel.visible{display:block}
+#mp3-file{display:none}#mp3-name{font-size:13px;overflow-wrap:anywhere;color:#e7dcf5;margin:8px 0}
+#mp3-player{width:100%;margin-top:8px;display:none}#admin-status{font-size:13px;color:#ffe38a;min-height:18px;margin-top:10px}
+</style></head><body><canvas id="c" tabindex="0" aria-label="Fruit Rush game"></canvas>
+<div id="admin-console" aria-hidden="true">
+  <section id="admin-card" role="dialog" aria-modal="true" aria-label="Game console">
+    <h2>Fruit Rush Console</h2>
+    <p>Type <b>music</b> and press Enter to open the temporary MP3 uploader. Press Escape to close. This console is local to this browser.</p>
+    <form id="admin-form"><input id="admin-command" autocomplete="off" spellcheck="false" placeholder="Enter command..." aria-label="Console command"><div class="admin-row"><button class="admin-btn" type="submit">Run command</button><button class="admin-btn secondary" type="button" id="admin-close">Close</button></div></form>
+    <div id="music-panel">
+      <p>Choose an MP3 from your device, then press Play. The file is not uploaded to a server and is not saved; refreshing the page clears it.</p>
+      <input id="mp3-file" type="file" accept=".mp3,audio/mpeg">
+      <div class="admin-row"><button class="admin-btn" type="button" id="mp3-choose">Choose MP3</button><button class="admin-btn" type="button" id="mp3-play" disabled>Play song</button><button class="admin-btn secondary" type="button" id="mp3-stop" disabled>Stop</button></div>
+      <div id="mp3-name">No file selected</div><audio id="mp3-player" controls></audio>
+    </div>
+    <div id="admin-status" role="status"></div>
+  </section>
+</div>
 <script>
 let W=960,H=640,PT=false,OX=0,OY=0,bx=0,by=0;const cv=document.getElementById('c'),c=cv.getContext('2d');let sc=1;
 let S={best:0,bgm:1,snd:1};try{Object.assign(S,JSON.parse(localStorage.getItem('fruitrush')||'{}'))}catch(e){}
@@ -44,7 +67,8 @@ let trk=0,toast={t:0,s:''};
 const showTrack=()=>{toast={t:2.8,s:TR[trk].n}};
 function skipTrack(){trk=(trk+1)%TR.length;stp=0;if(ac)nextT=ac.currentTime+.08;showTrack()}
 function gl(f,t,v,bus){const s=ac.currentTime+t;[[f,1,.5],[f*2.76,.35,.15]].forEach(([q,m,d])=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=q;g.gain.setValueAtTime(.0001,s);g.gain.linearRampToValueAtTime(v*m,s+.004);g.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(g);g.connect(bus);o.start(s);o.stop(s+d+.05)})}
-function sched(){if(!ac)return;if(!S.bgm){nextT=Math.max(nextT,ac.currentTime);return}
+let customMusicPlaying=false;
+function sched(){if(!ac||customMusicPlaying)return;if(!S.bgm){nextT=Math.max(nextT,ac.currentTime);return}
 while(nextT<ac.currentTime+.3){const T=TR[trk],M=T.m.replace(/\|/g,''),ch=T.c.split(' ')[(stp%64)>>3],s=stp%64,b=s%8,q=Math.max(0,nextT-ac.currentTime),sw=b%2?T.sw:0,m=M[s],k=T.k,r0=+ch.slice(0,-1),r=r0>=5?r0-12:r0,tp=TRI[ch.slice(-1)];
 if(m!='.')pluck(k*2**(PE[+m]/12),q+sw,.17,bgmG,.4);
 if(b%2)gl(k*4*2**((r+tp[(b>>1)%3])/12),q+sw,.03,bgmG);
@@ -132,7 +156,7 @@ function toggle(x,y,on){c.beginPath();c.roundRect(x,y,84,42,21);c.fillStyle=on?'
 function popup(){const t=Math.min(1,ot*3.5),s=1-(1-t)**3;c.fillStyle='rgba(30,10,30,'+.35*t+')';c.fillRect(0,0,W,H);c.save();bx=PT?-210:0;by=PT?(H-640)/2:0;c.translate(bx,by);c.translate(480,320);c.scale(.6+.4*s,.6+.4*s);c.globalAlpha=t;c.translate(-480,-320)}
 /* ---------- DRAW ---------- */
 function draw(){c.setTransform(sc,0,0,sc,0,0);btns=[];bx=by=0;const tt=performance.now()/1000,gr=c.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#ffd6e0');gr.addColorStop(1,'#ffb3c6');c.fillStyle=gr;c.fillRect(0,0,W,H);
-c.fillStyle='rgba(255,255,255,.22)';for(let i=0;i<40;i++){const rr=6+i%5*4;c.beginPath();c.arc((i*173+Math.sin(tt*.5+i)*20)%W,H+rr*2-((i*97+tt*(14+i%4*6))%(H+rr*2)),rr,0,7);c.fill()}
+c.fillStyle='rgba(255,255,255,.22)';for(let i=0;i<24;i++){const rr=6+i%5*4;c.beginPath();c.arc((i*173+Math.sin(tt*.5+i)*20)%W,H+rr*2-((i*97+tt*(14+i%4*6))%(H+rr*2)),rr,0,7);c.fill()}
 if(state=='load'){c.save();c.translate(PT?-210:0,PT?(H-640)/2:0);drawLoad();c.restore();return}
 c.save();if(sh>.5)c.translate((Math.random()-.5)*sh,(Math.random()-.5)*sh);c.translate(OX,OY);
 c.beginPath();c.moveTo(270,200);c.lineTo(690,200);c.lineTo(655,600);c.lineTo(305,600);c.closePath();c.fillStyle='#ddd8da';c.fill();
@@ -196,13 +220,39 @@ else if((k==' '||k=='ArrowDown')&&state=='play'){drop();e.preventDefault()}
 else if((k=='c'||k=='C')&&state=='play')act('change');else if((k=='x'||k=='X')&&state=='play')act('clash');
 else if(k=='m'||k=='M')act('bgm');else if(k=='n'||k=='N')act('skip');else if(k=='Escape'||k=='p'){if(state=='play')act('menu');else if(state=='menu')act('back')}
 else if((k=='Enter'||k=='r')&&state=='over')act('retry');aim=cl(aim,0,W)});
+/* ---------- TEMPORARY LOCAL MUSIC CONSOLE ---------- */
+(()=>{
+ const shell=document.getElementById('admin-console'),form=document.getElementById('admin-form'),input=document.getElementById('admin-command');
+ const panel=document.getElementById('music-panel'),status=document.getElementById('admin-status'),file=document.getElementById('mp3-file');
+ const choose=document.getElementById('mp3-choose'),play=document.getElementById('mp3-play'),stop=document.getElementById('mp3-stop');
+ const player=document.getElementById('mp3-player'),name=document.getElementById('mp3-name');
+ let objectUrl=null;
+ function openConsole(){shell.classList.add('open');shell.setAttribute('aria-hidden','false');input.value='';status.textContent='';setTimeout(()=>input.focus(),0)}
+ function closeConsole(){shell.classList.remove('open');shell.setAttribute('aria-hidden','true');if(cv)cv.focus?.()}
+ function stopCustomMusic(){player.pause();player.currentTime=0;customMusicPlaying=false;nextT=ac?ac.currentTime+.08:0;play.textContent='Play song'}
+ function clearCustomFile(){stopCustomMusic();player.removeAttribute('src');player.load();player.style.display='none';play.disabled=true;stop.disabled=true;file.value='';name.textContent='No file selected';if(objectUrl){URL.revokeObjectURL(objectUrl);objectUrl=null}}
+ form.addEventListener('submit',e=>{e.preventDefault();const command=input.value.trim().toLowerCase();if(command==='music'){panel.classList.add('visible');status.textContent='Music uploader opened. Choose an MP3 file.'}else if(command==='refresh'){clearCustomFile();status.textContent='Temporary music cleared. Refresh the page to reload the game.'}else status.textContent='Unknown command. Try: music';});
+ choose.addEventListener('click',()=>file.click());
+ file.addEventListener('change',()=>{const picked=file.files&&file.files[0];if(!picked)return;if(!(picked.type==='audio/mpeg'||picked.name.toLowerCase().endsWith('.mp3'))){status.textContent='Please choose an MP3 file.';file.value='';return}clearCustomFile();objectUrl=URL.createObjectURL(picked);player.src=objectUrl;player.style.display='block';name.textContent=picked.name;play.disabled=false;stop.disabled=false;status.textContent='MP3 ready. Press Play song.'});
+ play.addEventListener('click',async()=>{if(!player.src)return;try{if(ac&&ac.state==='suspended')await ac.resume();await player.play();customMusicPlaying=true;play.textContent='Playing';status.textContent='Playing your temporary MP3.'}catch(e){status.textContent='Could not play this file. Try another MP3 or press Play again.'}});
+ stop.addEventListener('click',()=>{stopCustomMusic();status.textContent='MP3 stopped.'});
+ player.addEventListener('ended',()=>{customMusicPlaying=false;nextT=ac?ac.currentTime+.08:0;play.textContent='Play song';status.textContent='Song finished.'});
+ player.addEventListener('pause',()=>{if(!player.ended&&customMusicPlaying){customMusicPlaying=false;nextT=ac?ac.currentTime+.08:0;play.textContent='Play song'}});
+ document.getElementById('admin-close').addEventListener('click',closeConsole);
+ shell.addEventListener('pointerdown',e=>{if(e.target===shell)closeConsole()});
+ addEventListener('keydown',e=>{
+   if(e.key.charCodeAt(0)===96||e.key==='~'||e.key==='F2'){e.preventDefault();e.stopImmediatePropagation();if(shell.classList.contains('open'))closeConsole();else openConsole();return}
+   if(shell.classList.contains('open')){e.stopImmediatePropagation();if(e.key==='Escape'){e.preventDefault();closeConsole()}}
+ },true);
+ addEventListener('beforeunload',()=>{try{player.pause();if(objectUrl)URL.revokeObjectURL(objectUrl)}catch(e){}});
+})();
 /* ---------- LOOP ---------- */
 let last=performance.now(),acc=0,progressSaveTimer=0;
 function loop(n){const dt=Math.min(.05,(n-last)/1000);last=n;ot+=dt;
 if(state=='load')lp=Math.min(fontsOk?1:.9,lp+dt/2.4);
 if(state=='play'){acc+=dt;while(acc>=1/120){step(1/120);acc-=1/120}cool=Math.max(0,cool-dt);al=acc*120;progressSaveTimer+=dt;if(progressSaveTimer>=2){saveProgress();progressSaveTimer=0}}else al=1
-for(const p of pt){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=600*dt;p.l-=dt}pt=pt.filter(p=>p.l>0);
-for(const f of fl)f.t-=dt*1.1;for(const o of rg)o.t-=dt*2.2;rg=rg.filter(o=>o.t>0);comboT=Math.max(0,comboT-dt);toast.t-=dt;aimV+=(cl(aim,285+R[cur],675-R[cur])-aimV)*(1-Math.exp(-dt*22));fl=fl.filter(f=>f.t>0);sh*=.9;
+let pw=0;for(let i=0;i<pt.length;i++){const p=pt[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=600*dt;p.l-=dt;if(p.l>0)pt[pw++]=p}pt.length=pw;
+for(const f of fl)f.t-=dt*1.1;for(const o of rg)o.t-=dt*2.2;let rw=0;for(let i=0;i<rg.length;i++)if(rg[i].t>0)rg[rw++]=rg[i];rg.length=rw;comboT=Math.max(0,comboT-dt);toast.t-=dt;aimV+=(cl(aim,285+R[cur],675-R[cur])-aimV)*(1-Math.exp(-dt*22));let fw=0;for(let i=0;i<fl.length;i++)if(fl[i].t>0)fl[fw++]=fl[i];fl.length=fw;sh*=.9;
 draw();if(state=='play'&&ot<.35){c.setTransform(sc,0,0,sc,0,0);c.fillStyle='rgba(255,191,203,'+(1-ot/.35)+')';c.fillRect(0,0,W,H)}requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){if(state=='play')setState('menu');if(ac)ac.suspend()}else if(ac)ac.resume()});
